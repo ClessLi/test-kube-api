@@ -18,6 +18,7 @@ package v1
 
 import (
 	"github.com/robfig/cron"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,6 +39,10 @@ func (r *CronJob) SetupWebhookWithManager(mgr ctrl.Manager) error {
 }
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+const (
+	mutatedAnnotation = "test-kube-api-mutated"
+	isMutated         = "isMutated"
+)
 
 //+kubebuilder:webhook:path=/mutate-batch-github-com-v1-cronjob,mutating=true,failurePolicy=fail,sideEffects=None,groups=batch.github.com,resources=cronjobs,verbs=create;update,versions=v1,name=mcronjob.kb.io,admissionReviewVersions={v1,v1beta1}
 
@@ -61,6 +66,23 @@ func (r *CronJob) Default() {
 		r.Spec.FailedJobsHistoryLimit = new(int32)
 		*r.Spec.FailedJobsHistoryLimit = 1
 	}
+
+	// mutating
+	if r.Annotations == nil {
+		r.Annotations = make(map[string]string)
+	}
+
+	if av, ok := r.Annotations[mutatedAnnotation]; ok && av == isMutated {
+		return
+	}
+
+	r.Spec.JobTemplate.Spec.Template.Spec.InitContainers = append(r.Spec.JobTemplate.Spec.Template.Spec.InitContainers, v1.Container{
+		Name:  "initial-test",
+		Image: "busybox",
+		Args:  []string{"/bin/sh", "-c", "date; echo Test for initial job"},
+	})
+
+	r.Annotations[mutatedAnnotation] = isMutated
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
