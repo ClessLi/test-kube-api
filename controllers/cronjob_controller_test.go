@@ -35,7 +35,7 @@ var _ = Describe("CronJob controller", func() {
 			ctx := context.Background()
 			cronJob := &cronjobv1.CronJob{
 				TypeMeta: metav1.TypeMeta{
-					APIVersion: "batch.tutorial.kubebuilder.io/v1",
+					APIVersion: "batch.github.com/v1",
 					Kind:       "CronJob",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -53,7 +53,12 @@ var _ = Describe("CronJob controller", func() {
 									Containers: []v1.Container{
 										{
 											Name:  "test-container",
-											Image: "test-image",
+											Image: "busybox",
+											Args: []string{
+												"/bin/sh",
+												"-c",
+												"date; echo Hello from the Kubernetes cluster",
+											},
 										},
 									},
 									RestartPolicy: v1.RestartPolicyOnFailure,
